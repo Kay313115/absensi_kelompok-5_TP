@@ -43,10 +43,13 @@
         </div>
 
         <div id="scanner-section" class="card hidden">
-            <div class="scanner-header">
-                <h3 style="margin:0;">Scan Kartu Barcode</h3>
-                <button class="btn-sm" onclick="resetDeviceSelection()">✕ Kembali</button>
-            </div>
+           <div class="scanner-header">
+  <h4>Scanner</h4>
+  <div style="display:flex; gap:6px;">
+    <button class="btn-sm" onclick="switchCamera()">🔄 Flip</button>
+    <button class="btn-sm" onclick="stopScanner()">Tutup</button>
+  </div>
+</div>
             <div class="mode-btns">
               <button id="btn-mode-hadir" onclick="setStatusKehadiran('HADIR')">✅ HADIR</button>
               <button id="btn-mode-izin" onclick="setStatusKehadiran('IZIN')">📝 IZIN / ALPA</button>
