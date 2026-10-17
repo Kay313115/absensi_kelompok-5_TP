@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Pengajian Kelompok 5</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- TAMBAHAN UX 1: TOAST CONTAINER -->
+    <div id="toast-container"></div>
+    <div id="loading-overlay" class="hidden"><div class="spinner"></div><p>Mengirim data...</p></div>
+
+    <div class="phone-container">
+        <div class="header">
+            <h1>Absensi Pengajian</h1>
+            <p>Kelompok 5 TP</p>
+            <div class="ornamen">─── ◈ ───</div>
+        </div>
+
+        <div class="welcome-card">
+            <div class="mosque-icon">🕌</div>
+            <div>
+                <b>Halo, selamat datang!</b>
+                <span>Silakan pilih absensi kehadiran.</span>
+            </div>
+        </div>
+
+        <div id="setup-section">
+            <button id="btn-op-bapak" class="btn-pos pos-putra" onclick="selectDevice('BAPAK')">
+                <div class="circle">👤</div>
+                <div><div class="t1">ABSENSI</div><div class="t2">JAMA'AH PUTRA</div></div>
+                <div class="arrow">›</div>
+            </button>
+            <button id="btn-op-ibu-remaja" class="btn-pos pos-putri" onclick="selectDevice('IBU_REMAJA')">
+                <div class="circle">👤</div>
+                <div><div class="t1">ABSENSI</div><div class="t2">JAMA'AH PUTRI</div></div>
+                <div class="arrow">›</div>
+            </button>
+            <p id="selected-mode-text" class="status-text">Status: Belum memilih perangkat.</p>
+        </div>
+
+        <div id="scanner-section" class="card hidden">
+            <div class="scanner-header">
+                <h3 style="margin:0;">Scan Kartu Barcode</h3>
+                <button class="btn-sm" onclick="resetDeviceSelection()">✕ Kembali</button>
+            </div>
+            <div class="mode-btns">
+              <button id="btn-mode-hadir" onclick="setStatusKehadiran('HADIR')">✅ HADIR</button>
+              <button id="btn-mode-izin" onclick="setStatusKehadiran('IZIN')">📝 IZIN / ALPA</button>
+            </div>
+            <!-- TAMBAHAN UX 2: HINT SCANNER -->
+            <p class="scan-hint" id="scan-hint">Arahkan barcode ke dalam kotak hijau</p>
+            <div id="reader"></div>
+
+            <div id="izin-section" class="hidden">
+              <h4>FORM ALPA (KHUSUS PENGURUS)</h4>
+              <input id="input-nama-izin" placeholder="Nama Lengkap" autocomplete="off">
+              <select id="input-kategori-izin">
+                <option>BAPAK-BAPAK</option><option>IBU-IBU</option><option>REMAJA PUTRA</option><option>REMAJI PUTRI</option>
+              </select>
+              <input type="text" id="input-alasan" value="Tanpa Keterangan" readonly>
+              <button class="btn-kirim-small" onclick="submitIzinManual()">SUBMIT</button>
+            </div>
+
+            <div id="scan-result" class="result-box hidden">
+                <p id="result-nama">Nama: -</p>
+                <p id="result-status">Kategori: -</p>
+                <p id="result-message" class="msg-box"></p>
+            </div>
+        </div>
+
+        <div class="card log-card">
+            <div class="log-header">
+                <h3 style="font-size:13px;">Log Hari Ini</h3>
+                <span id="log-count" class="log-count">0 jamaah</span>
+            </div>
+            <div class="table-responsive">
+                <table id="attendance-table">
+                    <thead><tr><th>Waktu</th><th>Nama</th><th>Kategori</th><th>ID</th><th>Keterangan</th></tr></thead>
+                    <tbody id="attendance-log-body">
+                        <tr id="empty-log"><td colspan="5" style="text-align:center; padding:20px; color:#999;">Belum ada absen hari ini</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<script src="app.js"></script>
+</body>
+</html>
