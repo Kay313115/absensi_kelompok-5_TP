@@ -48,6 +48,46 @@ function selectDevice(mode) {
 }
 
 function resetDeviceSelection() {
+  let currentCamera = "environment"; // belakang dulu
+let html5QrCode;
+
+async function startScanner() {
+  html5QrCode = new Html5Qrcode("reader");
+  const config = { 
+    fps: 15, 
+    qrbox: { width: 250, height: 250 },
+    aspectRatio: 1.0
+  };
+  
+  try {
+    await html5QrCode.start(
+      { facingMode: currentCamera },
+      config,
+      onScanSuccess,
+      onScanFailure
+    );
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function switchCamera() {
+  // ganti kamera
+  currentCamera = currentCamera === "environment" ? "user" : "environment";
+  
+  if (html5QrCode) {
+    await html5QrCode.stop();
+  }
+  // start lagi dengan kamera baru
+  startScanner();
+}
+
+function stopScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop();
+    document.getElementById("reader").innerHTML = "";
+  }
+}
   if (html5QrcodeScanner) {
     html5QrcodeScanner.stop().then(() => {
       html5QrcodeScanner.clear();
