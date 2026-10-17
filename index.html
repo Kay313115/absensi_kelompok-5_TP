@@ -2,14 +2,13 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Absensi Pengajian Kelompok 5</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- TAMBAHAN UX 1: TOAST CONTAINER -->
     <div id="toast-container"></div>
     <div id="loading-overlay" class="hidden"><div class="spinner"></div><p>Mengirim data...</p></div>
 
@@ -43,18 +42,20 @@
         </div>
 
         <div id="scanner-section" class="card hidden">
-           <div class="scanner-header">
-  <h4>Scanner</h4>
-  <div style="display:flex; gap:6px;">
-    <button class="btn-sm" onclick="switchCamera()">🔄 Flip</button>
-    <button class="btn-sm" onclick="stopScanner()">Tutup</button>
-  </div>
-</div>
+            <!-- INI YANG GUE BENERIN JAN - HEADER DIPAKSA DI ATAS VIDEO -->
+            <div class="scanner-header" style="position:relative; z-index:9999; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:white; padding:6px 0;">
+                <h4 style="margin:0;">Scanner</h4>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-sm" onclick="switchCamera()" style="position:relative; z-index:9999; cursor:pointer;">🔄 Flip</button>
+                    <button type="button" class="btn-sm" onclick="resetDeviceSelection()" style="position:relative; z-index:9999; background:#ffebee; color:#c62828; cursor:pointer;">Tutup</button>
+                </div>
+            </div>
+
             <div class="mode-btns">
               <button id="btn-mode-hadir" onclick="setStatusKehadiran('HADIR')">✅ HADIR</button>
               <button id="btn-mode-izin" onclick="setStatusKehadiran('IZIN')">📝 IZIN / ALPA</button>
             </div>
-            <!-- TAMBAHAN UX 2: HINT SCANNER -->
+
             <p class="scan-hint" id="scan-hint">Arahkan barcode ke dalam kotak hijau</p>
             <div id="reader"></div>
 
