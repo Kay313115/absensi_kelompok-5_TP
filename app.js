@@ -1,4 +1,4 @@
-// FINAL V12 FIXED - RAPI - FLIP KAMERA 100% WORK HP
+// FINAL V12 - FLIP & TUTUP 100% BISA DIPENCET
 let currentDeviceMode = null;
 let html5QrcodeScanner = null;
 let todayKey = new Date().toISOString().slice(0, 10);
@@ -6,17 +6,10 @@ let isProcessing = false;
 let statusKehadiranMode = 'HADIR';
 let lastSendTime = 0;
 let isScanning = false;
-let currentFacing = "environment"; // ini kunci nya Jan
+let currentFacing = "environment";
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjx6qzwE6nd1ndHfAMalnzpOe5G2wEwnGpiSbiYK2B40eTJdEz1m9tW_GBIMyeqX0I2Q/exec";
 const API_SECRET = "KLMPK5_2026_AMAN";
-
-const listJamaah = [
-  { nama: "alvin", kategori: "Bapak-Bapak", id: "BPK007" },
-  { nama: "annisa", kategori: "Ibu-Ibu", id: "IBU006" },
-  { nama: "algazali", kategori: "Remaja Putra", id: "RMJ005" },
-  { nama: "risma", kategori: "Remaji Putri", id: "RMJ006" },
-];
 
 if (localStorage.getItem('lastScanDate') !== todayKey) {
   localStorage.removeItem('scannedToday');
@@ -46,33 +39,32 @@ function selectDevice(mode) {
   document.getElementById('setup-section').classList.add('hidden');
   document.getElementById('scanner-section').classList.remove('hidden');
   setStatusKehadiran('HADIR');
+  currentFacing = "environment";
   startScanner();
 }
 
+// INI YANG BIKIN TUTUP GAK BISA DIPENCET - GUE BIKIN PAKSA
 function resetDeviceSelection() {
-  if (html5QrcodeScanner && isScanning) {
-    html5QrcodeScanner.stop().then(() => {
+  try {
+    if (html5QrcodeScanner) {
+      html5QrcodeScanner.stop().catch(() => {});
       html5QrcodeScanner.clear();
-      isScanning = false;
-      document.getElementById('scanner-section').classList.add('hidden');
-      document.getElementById('setup-section').classList.remove('hidden');
-    }).catch(() => {
-      document.getElementById('scanner-section').classList.add('hidden');
-      document.getElementById('setup-section').classList.remove('hidden');
-    });
-  } else {
-    document.getElementById('scanner-section').classList.add('hidden');
-    document.getElementById('setup-section').classList.remove('hidden');
-  }
+    }
+  } catch (e) {}
+
+  html5QrcodeScanner = null;
+  isScanning = false;
+
+  const reader = document.getElementById('reader');
+  if (reader) reader.innerHTML = "";
+
+  document.getElementById('scanner-section').classList.add('hidden');
+  document.getElementById('setup-section').classList.remove('hidden');
 }
 
 async function startScanner() {
-  if (html5QrcodeScanner) {
-    try {
-      await html5QrcodeScanner.stop();
-      html5QrcodeScanner.clear();
-    } catch (e) {}
-  }
+  const readerEl = document.getElementById('reader');
+  if (readerEl) readerEl.innerHTML = "";
 
   html5QrcodeScanner = new Html5Qrcode("reader");
 
@@ -89,30 +81,32 @@ async function startScanner() {
       () => {}
     );
     isScanning = true;
-    console.log("Kamera jalan:", currentFacing);
   } catch (err) {
-    console.log("Gagal buka kamera:", err);
-    alert("Gagal buka kamera: " + err);
+    console.log("Gagal:", err);
+    showToast("Gagal buka kamera", "gagal");
   }
 }
 
 async function switchCamera() {
-  // ganti mode
+  // paksa ganti tanpa cek jumlah kamera
   currentFacing = currentFacing === "environment" ? "user" : "environment";
 
-  if (isScanning && html5QrcodeScanner) {
-    try {
-      await html5QrcodeScanner.stop();
-      isScanning = false;
-    } catch (e) {}
-  }
+  try {
+    if (html5QrcodeScanner) {
+      await html5QrcodeScanner.stop().catch(()=>{});
+      html5QrcodeScanner.clear();
+    }
+  } catch (e) {}
 
-  await startScanner();
+  isScanning = false;
 
-  showToast(
-    currentFacing === "environment" ? "Kamera Belakang" : "Kamera Depan",
-    "sukses"
-  );
+  setTimeout(async () => {
+    await startScanner();
+    showToast(
+      currentFacing === "environment" ? "Kamera Belakang" : "Kamera Depan",
+      "sukses"
+    );
+  }, 300);
 }
 
 function stopScanner() {
@@ -154,30 +148,24 @@ function playSound(type) {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    osc.connect(gain); gain.connect(ctx.destination);
     if (type === 'sukses') {
-      osc.frequency.value = 900;
-      gain.gain.value = 1;
-      osc.start();
+      osc.frequency.value = 900; gain.gain.value = 1; osc.start();
       setTimeout(() => { osc.frequency.value = 1200; }, 150);
       setTimeout(() => { osc.stop(); ctx.close(); }, 400);
       if ('speechSynthesis' in window) {
         setTimeout(() => {
           const msg = new SpeechSynthesisUtterance("Absen Berhasil");
-          msg.lang = 'id-ID';
-          speechSynthesis.speak(msg);
+          msg.lang = 'id-ID'; speechSynthesis.speak(msg);
         }, 100);
       }
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     } else if (type === 'duplikat') {
-      osc.frequency.value = 500;
-      osc.start();
+      osc.frequency.value = 500; osc.start();
       setTimeout(() => { osc.stop(); ctx.close(); }, 500);
       if (navigator.vibrate) navigator.vibrate([300]);
     } else {
-      osc.frequency.value = 200;
-      osc.start();
+      osc.frequency.value = 200; osc.start();
       setTimeout(() => { osc.stop(); ctx.close(); }, 800);
       if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
     }
@@ -187,12 +175,6 @@ function playSound(type) {
 function onScanSuccess(decodedText) {
   if (isProcessing || statusKehadiranMode !== 'HADIR') return;
   isProcessing = true;
-  if (decodedText.length > 200) {
-    showVisualResult("Tolak", "TIDAK VALID", "QR terlalu panjang!", false);
-    playSound('gagal');
-    setTimeout(() => { isProcessing = false; }, 2000);
-    return;
-  }
   const parts = decodedText.split('|');
   if (parts.length !== 3) {
     showVisualResult("Format Salah", "TIDAK VALID", "Format QR salah.", false);
