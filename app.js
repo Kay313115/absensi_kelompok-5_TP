@@ -1,4 +1,4 @@
-// FINAL V13 - FLIP & TUTUP 100% BISA + SUARA DUPLIKAT
+// FINAL V14 - FIX SUARA DUPLIKAT PASTI BUNYI
 let currentDeviceMode = null;
 let html5QrcodeScanner = null;
 let todayKey = new Date().toISOString().slice(0, 10);
@@ -15,10 +15,7 @@ if (localStorage.getItem('lastScanDate') !== todayKey) {
   localStorage.removeItem('scannedToday');
   localStorage.setItem('lastScanDate', todayKey);
 }
-
-let scannedIdsToday = JSON.parse(
-  localStorage.getItem('scannedToday') || '[]'
-);
+let scannedIdsToday = JSON.parse(localStorage.getItem('scannedToday') || '[]');
 
 function formatKategori(kategori) {
   if (!kategori) return "-";
@@ -40,6 +37,7 @@ function selectDevice(mode) {
   document.getElementById('scanner-section').classList.remove('hidden');
   setStatusKehadiran('HADIR');
   currentFacing = "environment";
+  unlockAudio(); // AUTO UNLOCK PAS PILIH DEVICE
   startScanner();
 }
 
@@ -50,13 +48,10 @@ function resetDeviceSelection() {
       html5QrcodeScanner.clear();
     }
   } catch (e) {}
-
   html5QrcodeScanner = null;
   isScanning = false;
-
   const reader = document.getElementById('reader');
   if (reader) reader.innerHTML = "";
-
   document.getElementById('scanner-section').classList.add('hidden');
   document.getElementById('setup-section').classList.remove('hidden');
 }
@@ -64,24 +59,12 @@ function resetDeviceSelection() {
 async function startScanner() {
   const readerEl = document.getElementById('reader');
   if (readerEl) readerEl.innerHTML = "";
-
   html5QrcodeScanner = new Html5Qrcode("reader");
-
-  const config = {
-    fps: 10,
-    qrbox: { width: 250, height: 250 }
-  };
-
+  const config = { fps: 10, qrbox: { width: 250, height: 250 } };
   try {
-    await html5QrcodeScanner.start(
-      { facingMode: currentFacing },
-      config,
-      onScanSuccess,
-      () => {}
-    );
+    await html5QrcodeScanner.start({ facingMode: currentFacing }, config, onScanSuccess, () => {});
     isScanning = true;
   } catch (err) {
-    console.log("Gagal:", err);
     showToast("Gagal buka kamera", "gagal");
   }
 }
@@ -97,16 +80,11 @@ async function switchCamera() {
   isScanning = false;
   setTimeout(async () => {
     await startScanner();
-    showToast(
-      currentFacing === "environment" ? "Kamera Belakang" : "Kamera Depan",
-      "sukses"
-    );
+    showToast(currentFacing === "environment" ? "Kamera Belakang" : "Kamera Depan", "sukses");
   }, 300);
 }
 
-function stopScanner() {
-  resetDeviceSelection();
-}
+function stopScanner() { resetDeviceSelection(); }
 
 function setStatusKehadiran(mode) {
   statusKehadiranMode = mode;
@@ -131,6 +109,7 @@ function submitIzinManual() {
     localStorage.setItem('scannedToday', JSON.stringify(scannedIdsToday));
     showVisualResult(nama, kategori, `ALPA: Tanpa Keterangan`, true);
     playSound('sukses');
+    speak("Absen Berhasil");
     addLogTable(nama, kategori, id, "Tanpa Keterangan");
     sendToGoogleSheet(nama, kategori, id, "Tanpa Keterangan");
     document.getElementById('input-nama-izin').value = '';
@@ -138,23 +117,31 @@ function submitIzinManual() {
   }, 400);
 }
 
-// TAMBAHAN BARU - FUNGSI SUARA
+// === FIX UTAMA SUARA ===
+function unlockAudio() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    window.speechSynthesis.getVoices();
+  } catch(e){}
+}
+
 function speak(text) {
   try {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const msg = new SpeechSynthesisUtterance(text);
-      msg.lang = 'id-ID';
-      msg.rate = 0.9;
-      msg.volume = 1;
-      window.speechSynthesis.speak(msg);
-    }
-  } catch (e) { console.log(e); }
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'id-ID';
+    msg.rate = 0.9;
+    msg.volume = 1;
+    msg.pitch = 1;
+    window.speechSynthesis.speak(msg);
+  } catch (e) {}
 }
 
 function playSound(type) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -162,18 +149,17 @@ function playSound(type) {
       osc.frequency.value = 900; gain.gain.value = 1; osc.start();
       setTimeout(() => { osc.frequency.value = 1200; }, 150);
       setTimeout(() => { osc.stop(); ctx.close(); }, 400);
-      setTimeout(() => { speak("Absen Berhasil"); }, 100);
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     } else if (type === 'duplikat') {
-      osc.frequency.value = 500; osc.start();
-      setTimeout(() => { osc.stop(); ctx.close(); }, 500);
-      if (navigator.vibrate) navigator.vibrate([300]);
+      osc.frequency.value = 400; osc.start();
+      setTimeout(() => { osc.frequency.value = 250; }, 200);
+      setTimeout(() => { osc.stop(); ctx.close(); }, 600);
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
     } else {
       osc.frequency.value = 200; osc.start();
       setTimeout(() => { osc.stop(); ctx.close(); }, 800);
-      if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
     }
-  } catch (e) { console.log(e); }
+  } catch (e) {}
 }
 
 function onScanSuccess(decodedText) {
@@ -221,13 +207,14 @@ function onScanSuccess(decodedText) {
     playSound('duplikat');
     speak("Anda sudah absen hari ini");
     addLogTable(nama, kategori, idJamaah, "Duplikat");
-    setTimeout(() => { isProcessing = false; }, 3000);
+    setTimeout(() => { isProcessing = false; }, 3500);
     return;
   }
   scannedIdsToday.push(idJamaah);
   localStorage.setItem('scannedToday', JSON.stringify(scannedIdsToday));
   showVisualResult(nama, kategori, `SUKSES: ${nama} Hadir!`, true);
   playSound('sukses');
+  speak("Absen Berhasil");
   addLogTable(nama, kategori, idJamaah, "Hadir");
   sendToGoogleSheet(nama, kategori, idJamaah, "Hadir");
   setTimeout(() => {
@@ -266,13 +253,7 @@ function sendToGoogleSheet(nama, kategori, id, keterangan) {
   const now = Date.now();
   if (now - lastSendTime < 2000) return;
   lastSendTime = now;
-  const payload = {
-    token: API_SECRET,
-    nama: nama.toString().substring(0, 50),
-    kategori: formatKategori(kategori),
-    id: id.toString().substring(0, 100),
-    keterangan: keterangan.toString().substring(0, 30)
-  };
+  const payload = { token: API_SECRET, nama: nama.toString().substring(0, 50), kategori: formatKategori(kategori), id: id.toString().substring(0, 100), keterangan: keterangan.toString().substring(0, 30) };
   try {
     const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=UTF-8' });
     navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
@@ -295,3 +276,6 @@ function updateLogCount() {
   const counter = document.getElementById('log-count');
   if (counter) counter.textContent = `${count} jamaah`;
 }
+
+window.speechSynthesis.getVoices();
+window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
