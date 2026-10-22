@@ -1,4 +1,4 @@
-// FINAL V12 - FLIP & TUTUP 100% BISA DIPENCET
+// FINAL V13 - FLIP & TUTUP 100% BISA + SUARA DUPLIKAT
 let currentDeviceMode = null;
 let html5QrcodeScanner = null;
 let todayKey = new Date().toISOString().slice(0, 10);
@@ -26,9 +26,9 @@ function formatKategori(kategori) {
   if (k.includes('BAPAK')) return 'Bapak-Bapak';
   if (k.includes('IBU') && !k.includes('PUTRI')) return 'Ibu-Ibu';
   if (k.includes('REMAJA PUTRA')) return 'Remaja Putra';
-  if (k.includes('REMAJI PUTRI') || k.includes('REMAJA PUTRI')) return 'Remaji Putri';
+  if (k.includes('REMAJI PUTRI') || k.includes('REMAJA PUTRI')) return 'Remaja Putri';
   if (k === 'PUTRA') return 'Remaja Putra';
-  if (k === 'PUTRI') return 'Remaji Putri';
+  if (k === 'PUTRI') return 'Remaja Putri';
   return "-";
 }
 
@@ -43,7 +43,6 @@ function selectDevice(mode) {
   startScanner();
 }
 
-// INI YANG BIKIN TUTUP GAK BISA DIPENCET - GUE BIKIN PAKSA
 function resetDeviceSelection() {
   try {
     if (html5QrcodeScanner) {
@@ -88,18 +87,14 @@ async function startScanner() {
 }
 
 async function switchCamera() {
-  // paksa ganti tanpa cek jumlah kamera
   currentFacing = currentFacing === "environment" ? "user" : "environment";
-
   try {
     if (html5QrcodeScanner) {
       await html5QrcodeScanner.stop().catch(()=>{});
       html5QrcodeScanner.clear();
     }
   } catch (e) {}
-
   isScanning = false;
-
   setTimeout(async () => {
     await startScanner();
     showToast(
@@ -143,6 +138,20 @@ function submitIzinManual() {
   }, 400);
 }
 
+// TAMBAHAN BARU - FUNGSI SUARA
+function speak(text) {
+  try {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'id-ID';
+      msg.rate = 0.9;
+      msg.volume = 1;
+      window.speechSynthesis.speak(msg);
+    }
+  } catch (e) { console.log(e); }
+}
+
 function playSound(type) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -153,12 +162,7 @@ function playSound(type) {
       osc.frequency.value = 900; gain.gain.value = 1; osc.start();
       setTimeout(() => { osc.frequency.value = 1200; }, 150);
       setTimeout(() => { osc.stop(); ctx.close(); }, 400);
-      if ('speechSynthesis' in window) {
-        setTimeout(() => {
-          const msg = new SpeechSynthesisUtterance("Absen Berhasil");
-          msg.lang = 'id-ID'; speechSynthesis.speak(msg);
-        }, 100);
-      }
+      setTimeout(() => { speak("Absen Berhasil"); }, 100);
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     } else if (type === 'duplikat') {
       osc.frequency.value = 500; osc.start();
@@ -179,6 +183,7 @@ function onScanSuccess(decodedText) {
   if (parts.length !== 3) {
     showVisualResult("Format Salah", "TIDAK VALID", "Format QR salah.", false);
     playSound('gagal');
+    speak("QR tidak valid");
     setTimeout(() => { isProcessing = false; }, 2000);
     return;
   }
@@ -188,6 +193,7 @@ function onScanSuccess(decodedText) {
   if (kategori == "-") {
     showVisualResult(nama, "TIDAK VALID", "Kategori tidak dikenal!", false);
     playSound('gagal');
+    speak("Kategori tidak valid");
     setTimeout(() => { isProcessing = false; }, 3000);
     return;
   }
@@ -199,18 +205,21 @@ function onScanSuccess(decodedText) {
   if (currentDeviceMode === 'BAPAK' && !(isBapak || isPutra)) {
     showVisualResult(nama, kategori, `GAGAL: ${kategori} harus ke HP Ibu!`, false);
     playSound('gagal');
+    speak("Salah tempat absen");
     setTimeout(() => { isProcessing = false; }, 3000);
     return;
   }
   if (currentDeviceMode === 'IBU_REMAJA' && !(isIbu || isPutri)) {
     showVisualResult(nama, kategori, `GAGAL: ${kategori} harus ke HP Bapak!`, false);
     playSound('gagal');
+    speak("Salah tempat absen");
     setTimeout(() => { isProcessing = false; }, 3000);
     return;
   }
   if (scannedIdsToday.includes(idJamaah)) {
     showVisualResult(nama, kategori, `DUPLIKAT: sudah absen!`, false);
     playSound('duplikat');
+    speak("Anda sudah absen hari ini");
     addLogTable(nama, kategori, idJamaah, "Duplikat");
     setTimeout(() => { isProcessing = false; }, 3000);
     return;
